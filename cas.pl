@@ -6,29 +6,29 @@
    V1.0 2016-5-18.  Chris Sangwin
    -------------------------------------------------------------------
    	Example of how to use the program:
-	    to simplify the expression (2*1)*(x^(2-1))
+	    to tidy the expression (2*1)*(x^(2-1))
             one can
                 a) simply enter
-                                             simplify( (2*1)*(x^(2-1)), Z).
+                                             tidy( (2*1)*(x^(2-1)), Z).
                    after the Prolog prompt,
             or
                 b) enter
                                               Y = (2*1)*(x^(2-1)),
-                                              simplify( Y, Z).
+                                              tidy( Y, Z).
                    after the prompt.
             In both cases a two pass simplification is performed.
     ------------------------------------------------------------------ */
 
 /*  Definition of operators. */
-:- module(cas, [simplify/2]).
+:- module(cas, [tidy/2]).
 
 ?-op(11, yfx, '^').                 /*  Exponentiation.     */
 ?-op( 9,  fx, 'unaryminus').        /*  Minus sign.         */
 ?-op(11,  fx, 'ln').                /*  Natural logarithm.  */
 
-/*  Two pass simplification clause.  */
+/*  Two pass very basic tidying (i.e. "simplification") clause.  */
 
-simplify(X,Y) :- s(X, Z), s(Z, Y).
+tidy(X,Y) :- s(X, Z), s(Z, Y).
 
 /*  List processing of the expression to be simplified.  */
 
