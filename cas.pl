@@ -1,29 +1,24 @@
 /* -------------------------------------------------------------------
    CAS for SWI-Prolog version 7.2.3.
    
-   Based originally on SIMPSV.PRO (version 1.0), (c) 1987 S.Vaghi.
+   Based originally on ideas in
+     - SIMPSV.PRO (version 1.0), (c) 1987 S.Vaghi.
+     - Elementary.mac (c) 2016 Chris Sangwin [https://github.com/maths/moodle-qtype_stack/blob/master/stack/maxima/elementary.mac]
 
    V1.0 2016-5-18.  Chris Sangwin
    -------------------------------------------------------------------
    	Example of how to use the program:
 	    to tidy the expression (2*1)*(x^(2-1))
-            one can
-                a) simply enter
-                                             tidy( (2*1)*(x^(2-1)), Z).
-                   after the Prolog prompt,
-            or
-                b) enter
-                                              Y = (2*1)*(x^(2-1)),
-                                              tidy( Y, Z).
-                   after the prompt.
-            In both cases a two pass simplification is performed.
+        (1) tidy( (2*1)*(x^(2-1)), Z).
+        (2) Y = (2*1)*(x^(2-1)), tidy( Y, Z).
+    In both cases a two pass tidying (simplification) is performed.
     ------------------------------------------------------------------ */
 
 /*  Definition of operators. */
-:- module(cas, [tidy/2]).
+:- module(cas, [tidy/2, gather/2, distribute/2, factor/2]).
 
-?-op(11, yfx, '^').                 /*  Exponentiation.     */
 ?-op( 9,  fx, 'unaryminus').        /*  Minus sign.         */
+?-op(11, yfx, '^').                 /*  Exponentiation.     */
 ?-op(11,  fx, 'ln').                /*  Natural logarithm.  */
 
 /*  Two pass very basic tidying (i.e. "simplification") clause.  */
@@ -313,3 +308,18 @@ b('^', unaryminus(X), Y, unaryminus(X^Y)) :- ! .
 
 b('^', X, Y, X^Y).
 
+/* Gather like terms.  */
+
+gather(A*X+B*X, (A+B)*X) :- ! . 
+gather(X+X,2*X) :- ! .
+gather(A*X+X,(A+1)*X) :- ! .
+
+/* Distribution of multiplication over addition. */
+distribute(A*(X+Y), A*X+A*Y) :- ! .
+distribute(A*(X+Y)+Z, A*X+A*Y+Z) :- ! .
+distribute(A, A) :- ! .
+
+factor(X, Y) :- distribute(Y, X).
+
+/* Generate a random selection from a list.  */
+rand(List, X) :- random_permutation(List, L), L= [X | _].

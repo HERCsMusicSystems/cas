@@ -30,9 +30,16 @@ test(cas) :- tidy((x-1)^2/(x^2-2*x+1), 1).
 /* Numbers.  */
 test(cas) :- tidy(1 + 2, 3). 
 
-/* Grouping terms */
+/* Grouping terms. */
 test(cas) :- tidy(x+x, 2*x). 
+test(cas) :- tidy(x+x+x, 3*x). 
 test(cas) :- tidy((x-1)^2+3*(x-1)^2, 4*(x-1)^2). 
+
+/* Order: numbers in products should go first. */
+test(cas) :- tidy(2*x, 2*x). 
+test(cas) :- tidy(x*2, 2*x). 
+test(cas) :- tidy(x*3*y, 3*x*y). 
+test(cas) :- tidy(y*3*x, 3*x*y). 
 
 
 /* Logarithms: not yet implemented.
@@ -52,6 +59,19 @@ test(cas) :- tidy((1-sqrt(2))^ln(2), sqrt(2)).
 test(cas) :- tidy((1-sqrt(2))^ln(ln(1-sqrt(2))), sqrt(2)).
 test(cas) :- tidy((1-sqrt(2))^ln(ln(2)), sqrt(2)).
 */
+
+/* Gather like terms. */
+test(cas) :- gather(x+x, 2*x). 
+test(cas) :- gather(x+x+y, 2*x+y). 
+test(cas) :- gather(x+y+x, 2*x+y). 
+
+
+/* Distribution. */
+test(cas) :- distribute(x, x). 
+test(cas) :- distribute(x*(a+b), x*a+x*b). 
+test(cas) :- distribute(2*x*(a+b), 2*x*a+2*x*b). 
+test(cas) :- distribute(x*(a+b)+2, x*a+x*b+2). 
+
 
 :- end_tests(cas).
 
