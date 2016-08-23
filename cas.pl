@@ -310,9 +310,10 @@ b('^', X, Y, X^Y).
 
 /* Gather like terms.  */
 
-gather(A*X+B*X, (A+B)*X) :- ! . 
 gather(X+X,2*X) :- ! .
 gather(A*X+X,(A+1)*X) :- ! .
+gather(X+A*X,(A+1)*X) :- ! .
+gather(A*X+B*X, (A+B)*X) :- ! . 
 
 /* Distribution of multiplication over addition. */
 distribute(A*(X+Y), A*X+A*Y) :- ! .

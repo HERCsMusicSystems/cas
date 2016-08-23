@@ -83,6 +83,11 @@ exq(num_pow_pos, "Calculate \\( 2^8\\).").
 mskill(num_pow_neg, "-ve powers of numbers").
 skill_dep(num_pow_neg, num_pow_pos).
 
+diagnosis(ineq, 201).
+mskill(ineq, "Use of <, > signs").
+exq(ineq, "Which of the following inequalities are true? (a) 8-9 < 9-1$\n (b) -4 > -51\n (c) 2-5 < -13-6\n (d) -3 < 7\n (e) 19-98 > 20-03").
+
+
 /*
 :- begin_tests(cas).
 
