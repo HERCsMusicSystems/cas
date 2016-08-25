@@ -62,16 +62,18 @@ test(cas) :- tidy((1-sqrt(2))^ln(ln(2)), sqrt(2)).
 
 /* Gather like terms. */
 test(cas) :- gather(x+x, 2*x). 
+test(cas) :- gather(x+x+x, 3*x). 
 test(cas) :- gather(x+x+y, 2*x+y). 
 test(cas) :- gather(x+y+x, 2*x+y). 
 
 
-/* Distribution. */
-test(cas) :- distribute(x, x). 
-test(cas) :- distribute(x*(a+b), x*a+x*b). 
-test(cas) :- distribute(2*x*(a+b), 2*x*a+2*x*b). 
-test(cas) :- distribute(x*(a+b)+2, x*a+x*b+2). 
-
+/* Expand. */
+test(cas) :- expand(x, x). 
+test(cas) :- expand(x*(a+b), x*a+x*b). 
+test(cas) :- expand(x*(a+b+c), x*a+x*b+x*c). 
+test(cas) :- expand(2*x*(a+b), 2*x*a+2*x*b). 
+test(cas) :- expand(x*(a+b)+2, x*a+x*b+2). 
+test(cas) :- expand((x+y)*(a+b+c), x*a+x*b+x*c+y*a+y*b+y*c). 
 
 :- end_tests(cas).
 

@@ -15,7 +15,7 @@
     ------------------------------------------------------------------ */
 
 /*  Definition of operators. */
-:- module(cas, [tidy/2, gather/2, distribute/2, factor/2]).
+:- module(cas, [tidy/2, gather/2, expand/2, factor/2]).
 
 ?-op( 9,  fx, 'unaryminus').        /*  Minus sign.         */
 ?-op(11, yfx, '^').                 /*  Exponentiation.     */
@@ -315,12 +315,13 @@ gather(A*X+X,(A+1)*X) :- ! .
 gather(X+A*X,(A+1)*X) :- ! .
 gather(A*X+B*X, (A+B)*X) :- ! . 
 
-/* Distribution of multiplication over addition. */
-distribute(A*(X+Y), A*X+A*Y) :- ! .
-distribute(A*(X+Y)+Z, A*X+A*Y+Z) :- ! .
-distribute(A, A) :- ! .
+/* Expand out the brackets. */
 
-factor(X, Y) :- distribute(Y, X).
+expand(A*(X+Y), E+A*Y) :- !, expand(A*X, E).
+expand(A+B, AA + BB) :- !, expand(A, AA), expand(B, BB).
+expand(E, E).
+
+factor(X, Y) :- expand(Y, X).
 
 /* Generate a random selection from a list.  */
 rand(List, X) :- random_permutation(List, L), L= [X | _].

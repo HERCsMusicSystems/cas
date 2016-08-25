@@ -10,10 +10,10 @@ ass1(SA, N1, N2) :- TA = x^2+(N1+N2)*x+(N1*N2), tidy(TA, SA).
 ass2(SA, N1, N2) :- TA = x^2+(N1+N2)*x+(N1*N2), tidy(SA, Y), tidy(TA, Y).  
 
 % Student's answer is algebraically equivalent to teacher's answer.
-ass3(SA, N1, N2) :- TA = x^2+(N1+N2)*x+(N1*N2), tidy(SA-TA, Z), Z = 0.       
+% We have used "tidy" in ass3, but we really want a stronger thing here.
+ass3(SA, N1, N2) :- TA = x^2+(N1+N2)*x+(N1*N2), expand(SA-TA, Y), tidy(Y, Z), Z = 0.       
 
 :- begin_tests(cas).
-:- use_module(cas).
 
 % ass1
 test(cas) :- ass1(x^2+5*x+6, 3, 2).
@@ -40,3 +40,27 @@ test(cas) :- ass3((x+2)*(x+3), 3, 2).
 test(cas, fail) :- ass3(x^2+2*x+3*x+7, 3, 2).
 
 :- end_tests(cas).
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% Different types of "tidying".
+%% Rules in order of increasing complexity.
+
+% (0) Rules you almost always want to apply.  = compating.
+% See, for example, https://github.com/maths/moodle-qtype_stack/blob/master/stack/maxima/elementary.mac
+% 1*x -> x.
+% x+0 -> x.
+% etc.
+
+% (1) Tidying.
+% Order terms in sums and products.     
+% e.g. x+z+y -> x+y+z
+%      x+x^2+1 -> x^2+x+1.
+
+% (2) Minial changing of expressions.
+% Integer arithmatic, e.g 2+3->5.
+% Gathering like terms   2*x^3+3*x^3 -> 5*x^3.
+
+% (3) Algebraic Equivalence.
+
+    
+    
