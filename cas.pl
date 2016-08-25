@@ -118,13 +118,13 @@ r('*', unaryminus(X), unaryminus(Y), Z) :- b('*', X, Y, Z), ! .
 r('*', X,unaryminus(Y), Z) :- b('*', X, Y, W), u('unaryminus',W,Z), ! .
 r('*', unaryminus(X), Y, Z) :- b('*', X, Y, W), u('unaryminus',W,Z), ! .
 
-r('*',Z^unaryminus(X),Z^unaryminus(Y),W) :- b('+',X,Y,S), b('^',Z,S,T), b('/',1,T,W), ! .
-r('*',Z^unaryminus(X), Z^Y,W) :- b('-',Y,X,S), b('^',Z,S,W), ! .
-r('*', Z^X,Z^unaryminus(Y),W) :- b('-',X,Y,S), b('^',Z,S,W), ! .
+r('*', Z^unaryminus(X), Z^unaryminus(Y),W) :- b('+',X,Y,S), b('^',Z,S,T), b('/',1,T,W), ! .
+r('*', Z^unaryminus(X), Z^Y,W) :- b('-',Y,X,S), b('^',Z,S,W), ! .
+r('*', Z^X, Z^unaryminus(Y),W) :- b('-',X,Y,S), b('^',Z,S,W), ! .
 r('*', Z^X, Z^Y,W) :- b('+',X,Y,T), b('^',Z,T,W), ! .
-r('*',X^unaryminus(Z),Y^unaryminus(Z),W) :- b('*',X,Y,S), b('^',S,Z,T), b('/',1,T,W), ! .
+r('*', X^unaryminus(Z),Y^unaryminus(Z),W) :- b('*',X,Y,S), b('^',S,Z,T), b('/',1,T,W), ! .
 r('*', X^Z,Y^unaryminus(Z),W) :- b('/',X,Y,S), b('^',S,Z,W), ! .
-r('*',X^unaryminus(Z), Y^Z,W) :- b('/',Y,X,S), b('^',S,Z,W), ! .
+r('*', X^unaryminus(Z), Y^Z,W) :- b('/',Y,X,S), b('^',S,Z,W), ! .
 r('*', X^Z, Y^Z,W) :- b('*',X,Y,T), b('^',T,Z,W), ! .
 
 r('*', X*Y,   Y, Z) :- b('^',Y,2,S), b('*',X,S,Z), ! .
