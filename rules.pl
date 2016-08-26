@@ -17,6 +17,17 @@ zeroMulp(_, false).
 zeroMul(0*_A, 0) :- !.
 zeroMul(A, A).
 
+oneMulp(1*_, true) :- ! .
+oneMulp(_, false).
+oneMul(1*A, A) :- !.
+oneMul(1*A, 1*A) :- !, fail.
+oneMul(A, A).
+
+onePowp(1^_, true) :- ! .
+onePowp(_, false).
+onePow(1^_A, 1) :- !.
+onePow(1^A, 1^A) :- !, fail.
+onePow(A, A).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -128,6 +139,7 @@ test(cas_rules) :- apply(zeroAdd, a+0, a+0).
 
 test(cas_rules) :- apply_rule(zeroAdd, a, a).
 test(cas_rules) :- apply_rule(zeroAdd, 1, 1).
+test(cas_rules) :- apply_rule(zeroAdd, 1+1, 1+1).
 test(cas_rules) :- apply_rule(zeroAdd, 0.5, 0.5).
 
 test(cas_rules) :- apply_rule(zeroAdd, 3*a, 3*a).
@@ -145,5 +157,7 @@ test(cas_rules) :- apply_rule_set([zeroMul,zeroAdd], 0*b+0+a, 0+a).
 
 test(cas_rules) :- apply_rule_set_repeat([zeroAdd,zeroMul], 0*b+0+a, a).
 test(cas_rules) :- apply_rule_set_repeat([zeroMul,zeroAdd], 0*b+0+a, a).
+test(cas_rules) :- apply_rule_set_repeat([zeroAdd,zeroMul], 1+1, 1+1).
+test(cas_rules, fail) :- apply_rule_set_repeat([zeroAdd,zeroMul], 1+1, 2).
 
 :- end_tests(cas_rules).
