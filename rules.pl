@@ -5,6 +5,7 @@
 module(cas_rules, [zeroAdd/2, map/3]).
 
 % Each rule has a predicate ending in "p" and the function itself which performs the rule.
+% NOTE: all these rules go one way only!  Therefore no circular loops.
 zeroAddp(0+_, true) :- ! .
 zeroAddp(_, false).
 zeroAdd(0+A, A) :- !.
@@ -45,7 +46,6 @@ apply_rule(R, E, S) :-
     map_rule_list(R, Args, Argsr),
     S =.. [Op | Argsr].
 
-
 % This is a clone of map_rule, but we use apply_rule instead.
 apply_rule_helper(_, [], []) :- !.
 apply_rule_helper(R, [X | L], [X1 | L1]) :- 
@@ -63,6 +63,15 @@ apply_rule_set([R | Rs], E, S) :-
     apply_rule(R, E, Er),
     apply_rule_set(Rs, Er, S).
 
+% Apply a set of rules to an expression repeatedly until it stops changing.
+apply_rule_set_repeat(R, E, S) :- apply_rule_set_repeat_helper(R, E, [], S).
+
+apply_rule_set_repeat_helper(_R, E, E, E) :- !.
+apply_rule_set_repeat_helper(R, E, _Ep, S) :- 
+    apply_rule_set(R, E, Er),
+    !,
+    apply_rule_set_repeat_helper(R, Er, E, S). 
+    
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 /* Substitute (Bratko, pg 157).  */
@@ -134,5 +143,7 @@ test(cas_rules) :- apply_rule_set([zeroMul,zeroAdd], 0*a+b, b).
 test(cas_rules) :- apply_rule_set([zeroAdd,zeroMul], 0*b+0+a, 0+0+a).
 test(cas_rules) :- apply_rule_set([zeroMul,zeroAdd], 0*b+0+a, 0+a).
 
+test(cas_rules) :- apply_rule_set_repeat([zeroAdd,zeroMul], 0*b+0+a, a).
+test(cas_rules) :- apply_rule_set_repeat([zeroMul,zeroAdd], 0*b+0+a, a).
 
 :- end_tests(cas_rules).
