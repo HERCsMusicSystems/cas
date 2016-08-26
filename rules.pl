@@ -4,20 +4,34 @@
 
 module(cas_rules, [zeroAdd/2, map/3]).
 
+to_nary(+(A, B), N) :-
+	to_nary(A, N1),
+	to_nary(B, N2),
+	append(N1, N2, N), !.
+
+to_nary(E, [E]).
+
+% Each rule has a predicate ending in "p" and the function itself which performs the rule.
 % NOTE: all these rules go one way only!  Therefore no circular loops.
+zeroAddp(0+_, true) :- ! .
+zeroAddp(_, false).
 zeroAdd(0+A, A) :- !.
-zeroAdd(A+0, A) :- !. 
 zeroAdd(0+A, 0+A) :- !, fail.
-zeroAdd(A+0, A+0) :- !, fail.
 zeroAdd(A, A).
 
+zeroMulp(0*_, true) :- ! .
+zeroMulp(_, false).
 zeroMul(0*_A, 0) :- !.
 zeroMul(A, A).
 
+oneMulp(1*_, true) :- ! .
+oneMulp(_, false).
 oneMul(1*A, A) :- !.
 oneMul(1*A, 1*A) :- !, fail.
 oneMul(A, A).
 
+onePowp(1^_, true) :- ! .
+onePowp(_, false).
 onePow(1^_A, 1) :- !.
 onePow(1^A, 1^A) :- !, fail.
 onePow(A, A).
@@ -101,7 +115,6 @@ apply_rule_set(_, E, E) :- atomic(E), !.
 apply_rule_set([], E, E) :- !.
 apply_rule_set([R | Rs], E, S) :- 
     apply_rule(R, E, Er),
-    !,
     apply_rule_set(Rs, Er, S).
 
 % Apply a set of rules to an expression repeatedly until it stops changing.
@@ -142,23 +155,30 @@ sublist(Sub, [Term | Terms], Sub1, [Term1 |Terms1]) :-
 
 :- begin_tests(cas_rules).
 
+test(cas_rules) :- zeroAddp(0+a, true).
 test(cas_rules) :- zeroAdd(0+a, a).
+
+test(cas_rules) :- zeroAddp(0+sin(x), true).
 test(cas_rules) :- zeroAdd(0+sin(x), sin(x)).
+
+test(cas_rules) :- zeroAddp(0, false).
 test(cas_rules) :- zeroAdd(0, 0).
-test(cas_rules) :- zeroAdd(a+0, a).
+
+test(cas_rules) :- zeroAddp(a+0, false).
+test(cas_rules) :- zeroAdd(a+0, a+0).
 
 test(cas_rules) :- map(f, [], []).
 test(cas_rules) :- map(f, [a,b,c], [f(a), f(b), f(c)]).
 
 test(cas_rules) :- map_rule_list(zeroAdd, [], []).
 test(cas_rules) :- map_rule_list(zeroAdd, [0+a], [a]).
-test(cas_rules) :- map_rule_list(zeroAdd, [a+0], [a]).
+test(cas_rules) :- map_rule_list(zeroAdd, [a+0], [a+0]).
 test(cas_rules, fail) :- map_rule_list(zeroAdd, [0+a], [0+a]).
 test(cas_rules) :- map_rule_list(zeroAdd, [0+a,b,0+sin(c)], [a,b,sin(c)]).
 
 test(cas_rules) :- apply(zeroAdd, a, a).
 test(cas_rules) :- apply(zeroAdd, 0+a, a).
-test(cas_rules) :- apply(zeroAdd, a+0, a).
+test(cas_rules) :- apply(zeroAdd, a+0, a+0).
 
 test(cas_rules) :- apply_rule(zeroAdd, a, a).
 test(cas_rules) :- apply_rule(zeroAdd, 1, 1).
@@ -179,7 +199,7 @@ test(cas_rules) :- apply_rule(oneMul, 1*a+b, a+b).
 
 test(cas_rules) :- apply_rule_set([zeroAdd,zeroMul], 0*a+b, 0+b).
 test(cas_rules) :- apply_rule_set([zeroMul,zeroAdd], 0*a+b, b).
-test(cas_rules) :- apply_rule_set([zeroAdd,zeroMul], 0*b+0+a, 0+a).
+test(cas_rules) :- apply_rule_set([zeroAdd,zeroMul], 0*b+0+a, 0+0+a).
 test(cas_rules) :- apply_rule_set([zeroMul,zeroAdd], 0*b+0+a, 0+a).
 test(cas_rules) :- apply_rule_set([zeroAdd,zeroMul], sin(0*a+b), sin(0+b)).
 
