@@ -75,7 +75,9 @@ to_nary_helper(_, E, [E]).
 from_nary(A, B) := to_nary(B, A).
 */
 
-
+% Sort the arguments of nary operators into a definite order. 
+narySort(nary(Op, N), nary(Op, Ns)) :- sort(N, Ns), !. 
+narySort(A, A). 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -222,5 +224,6 @@ test(cas_rules) :- to_nary((a*b)*c, nary(*, [a,b,c])).
 test(cas_rules) :- apply_rule_set_repeat([to_nary], sin(a+b+c), sin(nary(+, [a, b, c]))).
 test(cas_rules) :- apply_rule_set_repeat([to_nary], 2*(a+b+b), nary(*, [2, nary(+, [a, b, b])])).
 
+test(cas_rules) :- apply_rule_set_repeat([to_nary, narySort], 2*(z+a+y+0), nary(*, [2, nary(+, [0, a, y, z])])).
 
 :- end_tests(cas_rules).
