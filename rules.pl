@@ -99,8 +99,8 @@ apply_rule_set([R | Rs], E, S) :-
 % Apply a set of rules to an expression repeatedly until it stops changing.
 apply_rule_set_repeat(R, E, S) :- apply_rule_set_repeat_helper(R, E, [], S).
 
-apply_rule_set_repeat_helper(_R, E, E, E) :- !.
-apply_rule_set_repeat_helper(R, E, _Ep, S) :- 
+apply_rule_set_repeat_helper(_R, E, E, S) :- !, E=S.
+apply_rule_set_repeat_helper(R, E, Ep, S) :-
     apply_rule_set(R, E, Er),
     !,
     apply_rule_set_repeat_helper(R, Er, E, S). 
