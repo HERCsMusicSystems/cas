@@ -7,14 +7,11 @@ module(cas_rules, [zeroAdd/2, map/3]).
 % Each rule has a predicate ending in "p" and the function itself which performs the rule.
 zeroAddp(0+_, true) :- ! .
 zeroAddp(_, false).
-
 zeroAdd(0+A, A) :- !.
 zeroAdd(A, A).
 
-
 zeroMulp(0*_, true) :- ! .
 zeroMulp(_, false).
-
 zeroMul(0*_A, 0) :- !.
 zeroMul(A, A).
 
@@ -55,6 +52,42 @@ apply_rule_helper(R, [X | L], [X1 | L1]) :-
     XA,
     apply_rule_helper(R, L, L1).
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+% Apply a set of rules to an expression.
+% apply_rule_set(RuleSet, Expression, SimplifiedResult)
+apply_rule_set(_, E, E) :- atomic(E), !.
+apply_rule_set([], E, E) :- !.
+apply_rule_set([R | Rs], E, S) :- 
+    apply_rule(R, E, Er),
+    apply_rule_set(Rs, Er, S).
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+/* Substitute (Bratko, pg 157).  */
+
+% substitute(Subterm, Term, Subterm1, Term1)
+% if all occurances of Subterm in Term are subsituted with Subterm1 then we get Term1.
+
+% Case 1: Substitute the whole term.
+substitute(Term, Term, Term1, Term1) :- !.
+
+% Case 2: Nothing to substitute if Term is atomic.
+substitute(_, Term, _, Term) :- atomic(Term), !.
+
+% Case 3: Do substitution on arguments.
+substitute(Sub, Term, Sub1, Term1) :-
+  Term =.. [F | Args],
+  sublist(Sub, Args, Sub1, Args1),
+  Term1 =.. [F | Args1].
+
+sublist(_, [], _, []).
+sublist(Sub, [Term | Terms], Sub1, [Term1 |Terms1]) :-
+  substitute(Sub, Term, Sub1, Term1),
+  sublist(Sub, Terms, Sub1, Terms1).
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 :- begin_tests(cas_rules).
 
@@ -87,10 +120,18 @@ test(cas_rules) :- apply_rule(zeroAdd, a, a).
 test(cas_rules) :- apply_rule(zeroAdd, 1, 1).
 test(cas_rules) :- apply_rule(zeroAdd, 0.5, 0.5).
 
+test(cas_rules) :- apply_rule(zeroAdd, 3*a, 3*a).
 test(cas_rules) :- apply_rule(zeroAdd, 3*(0+a), 3*a).
 test(cas_rules) :- apply_rule(zeroAdd, (0+b)*(0+a), b*a).
 test(cas_rules) :- apply_rule(zeroAdd, (0+b)*(0+a)+7, b*a+7).
 
 test(cas_rules) :- apply_rule(zeroMul, 0*(0+a), 0).
+test(cas_rules) :- apply_rule(zeroMul, 0*a+b, 0+b).
+
+test(cas_rules) :- apply_rule_set([zeroAdd,zeroMul], 0*a+b, 0+b).
+test(cas_rules) :- apply_rule_set([zeroMul,zeroAdd], 0*a+b, b).
+test(cas_rules) :- apply_rule_set([zeroAdd,zeroMul], 0*b+0+a, 0+0+a).
+test(cas_rules) :- apply_rule_set([zeroMul,zeroAdd], 0*b+0+a, 0+a).
+
 
 :- end_tests(cas_rules).
