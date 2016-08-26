@@ -58,12 +58,24 @@ orderRules([orderPlus, orderMul]).
         <L> is a list of arguments.
 */
 
-to_nary(+(A, B), N) :-
-	to_nary(A, N1),
-	to_nary(B, N2),
+to_nary(E,E) :- atomic(E), !.
+to_nary(+(A, B), nary(+, N)) :- to_nary_helper(+, +(A, B), N), !.
+to_nary(*(A, B), nary(*, N)) :- to_nary_helper(*, *(A, B), N), !.
+to_nary(E,E).
+
+to_nary_helper(Op, E, N) :-
+        E =.. [Op, A, B],
+	to_nary_helper(Op, A, N1),
+	to_nary_helper(Op, B, N2),
 	append(N1, N2, N), !.
 
-to_nary(E, [E]).
+to_nary_helper(_, E, [E]).
+
+/* TODO
+from_nary(A, B) := to_nary(B, A).
+*/
+
+
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -197,5 +209,18 @@ test(cas_rules) :- apply_rule_set_repeat([oneMul], 1*1*b+0+a, b+0+a).
 test(cas_rules) :- apply_rule_set_repeat([zeroAdd,oneMul], 1*1*b+0+a, b+a).
 test(cas_rules, fail) :- apply_rule_set_repeat([zeroAdd,zeroMul], 1+1, 2).
 test(cas_rules) :- idRules(X), apply_rule_set_repeat(X, a^0+(0+b)+(1*c),1+b+c).
+
+test(cas_rules) :- to_nary(a,a).
+test(cas_rules) :- to_nary(a+b, nary(+, [a,b])).
+test(cas_rules) :- to_nary(a+b+c, nary(+, [a,b,c])).
+test(cas_rules) :- to_nary((a+b)+c, nary(+, [a,b,c])).
+test(cas_rules) :- to_nary(a+(b+c), nary(+, [a,b,c])).
+test(cas_rules) :- to_nary(a+4*b^2+c, nary(+, [a,4*b^2,c])).
+
+test(cas_rules) :- to_nary((a*b)*c, nary(*, [a,b,c])).
+
+test(cas_rules) :- apply_rule_set_repeat([to_nary], sin(a+b+c), sin(nary(+, [a, b, c]))).
+test(cas_rules) :- apply_rule_set_repeat([to_nary], 2*(a+b+b), nary(*, [2, nary(+, [a, b, b])])).
+
 
 :- end_tests(cas_rules).
