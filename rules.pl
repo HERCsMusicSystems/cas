@@ -4,6 +4,13 @@
 
 module(cas_rules, [zeroAdd/2, map/3]).
 
+to_nary(+(A, B), N) :-
+	to_nary(A, N1),
+	to_nary(B, N2),
+	append(N1, N2, N), !.
+
+to_nary(E, [E]).
+
 % Each rule has a predicate ending in "p" and the function itself which performs the rule.
 % NOTE: all these rules go one way only!  Therefore no circular loops.
 zeroAddp(0+_, true) :- ! .
