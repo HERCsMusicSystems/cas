@@ -1,6 +1,9 @@
 % An individual rule based approach to expression manipulation.
 %
 % Chris Sangwin, August 2016.
+%
+% To find the data structure underlying an expression in prolog.
+% writef('%d', [<expr>]).
 
 module(cas_rules, [zeroAdd/2, map/3]).
 
