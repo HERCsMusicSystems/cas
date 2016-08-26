@@ -37,25 +37,98 @@ zPow(_^0, 1) :- !.
 zPow(A^0, A^0) :- !, fail.
 zPow(A, A).
 
+idNeg(A-A, 0) :- !.
+idNeg(A-A, A-A) :- !, fail.
+idNeg(A, A).
+
 % List of all basic identity rules.
-idRules([zeroAdd, zeroMul, oneMul, onePow, idPow, zeroPow, zPow]).
+idRules([zeroAdd, zeroMul, oneMul, onePow, idPow, zeroPow, zPow, idNeg]).
 
-/* Premaure
-orderPlus(A+B, S) :-
-   sort([A,B], Sa),
-   S =.. ['+' | Sa], !.
-orderPlus(A, A).
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+/* Do numerical arithmetic, with all four operations. */
 
-orderMul(A*B, S) :- 
-   sort([A,B], Sa),
-   S =.. ['*' | Sa], !.
-orderMul(A, A).
+numArith(+(A, B), S) :-
+    number(A),
+    number(B),
+    S is A+B,
+    !.
+numArith(-(A, B), S) :-
+    number(A),
+    number(B),
+    S is A-B,
+    !.
+numArith(*(A, B), S) :-
+    number(A),
+    number(B),
+    S is A*B,
+    !.
+numArith(/(A, B), S) :-
+    number(A),
+    number(B),
+    S is A/B,
+    !.
+numArith(^(A, B), S) :-
+    number(A),
+    number(B),
+    S is A^B,
+    !.
+numArith(A, A).
 
-orderRules([orderPlus, orderMul]).
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+/* 
+  Distribute multiplication over addition. 
+  (a+b)*c -> a*c + b*c.
+  a*(b+c) -> a*b + a*c.
+*/
+
+/* TODO: deal with unary minus here... */
+distMullAdd(*(+(A, B), C), A*C + B*C) :- !.
+distMullAdd(*(A, +(B, C)), A*B + A*C) :- !.
+distMullAdd(A, A).
+
+/* TODO: this is prototype behaviour, but it exhibits the potential. */
+expand(E, S) :- 
+    apply_rule_set_repeat([from_nary, distMullAdd, numArith, gatherPow, gatherMul, to_nary, narySort], E, S1),
+    apply_rule_set_repeat([from_nary], S1, S).
+
+/* TODO:
+  The reason we want to deal with nary operators is exemplified in the following examples:
+  expand((x+2)*(x+3), S).
+  expand((x+2)*(x+3)*(x+4), S).
+
+  Having a binary + & * means we can't match up T+2*x+3*x.
 */
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-/* To represent associative addition we have an "nary" operator. 
+% Gather terms in a product.
+
+/* TODO: this is probably better done by manipulating nary terms. */
+gatherMul(+(A, A), 2*A) :- !.
+gatherMul(+(N*A, A), (N+1)*A) :- !.
+gatherMul(+(A*N, A), (N+1)*A) :- !.
+gatherMul(+(A, N*A), (1+N)*A) :- !.
+gatherMul(+(A, A*N), (1+N)*A) :- !.
+gatherMul(+(N*A, M*A), (N+M)*A) :- !.
+gatherMul(+(A*N, M*A), (N+M)*A) :- !.
+gatherMul(+(N*A, A*M), (N+M)*A) :- !.
+gatherMul(+(A*N, A*M), (N+M)*A) :- !.
+gatherMul(A,A).
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Gather powers.  a^n*a^m -> a^(n+m)
+
+/* TODO: combine terms in nary products as well. */
+gatherPow(*(A, A), A^2) :- !.
+gatherPow(*(A^N, A), A^(N+1)) :- !.
+gatherPow(*(A, A^N), A^(1+N)) :- !.
+gatherPow(*(A^N, A^M), A^(N+M)) :- !.
+gatherPow(A,A).
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+/* To represent associative addition and multiplication we have an "nary" operator. 
   nary(<op>, <L>)
   where <op> is either '+' or '*'.
         <L> is a list of arguments.
@@ -68,18 +141,30 @@ to_nary(E,E).
 
 to_nary_helper(Op, E, N) :-
         E =.. [Op, A, B],
-	to_nary_helper(Op, A, N1),
-	to_nary_helper(Op, B, N2),
-	append(N1, N2, N), !.
-
+    to_nary_helper(Op, A, N1),
+    to_nary_helper(Op, B, N2),
+    append(N1, N2, N), !.
 to_nary_helper(_, E, [E]).
 
-/* TODO
-from_nary(A, B) := to_nary(B, A).
-*/
+/* Turns an nary term back into sums and products. */
+% This should hold: from_nary(A, B) :- to_nary(B, A).
+from_nary(E, E) :- atomic(E), !.
+from_nary(nary(Op, L), S) :-
+    reverse(L, R),
+    from_nary_helper(Op, R, S), !.
+from_nary(E, E).
+
+from_nary_helper(_Op, [N], N) :- !.
+from_nary_helper(Op, [N | L], S) :-
+    S =.. [Op, E1, N],
+    from_nary_helper(Op, L, E1).
 
 % Sort the arguments of nary operators into a definite order. 
-narySort(nary(Op, N), nary(Op, Ns)) :- sort(N, Ns), !. 
+% This rule implements commuataivity of + and *, allowing us to sort 
+% operands into a list.  We can then compare the sorted lists.
+narySort(nary(Op, N), nary(Op, Ns)) :- 
+    msort(N, Ns), % Warning: sort removes duplicates.
+    !.
 narySort(A, A). 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -110,7 +195,7 @@ apply_rule(R, E, S) :-
     map_rule_list(R, Args, Argsr),
     S =.. [Op | Argsr].
 
-% This is a clone of map_rule, but we use apply_rule instead.
+% This is very similar to the map_rule, but we use apply_rule instead.
 apply_rule_helper(_, [], []) :- !.
 apply_rule_helper(R, [X | L], [X1 | L1]) :- 
     XA =.. [apply_rule, R, X, X1],
@@ -135,7 +220,7 @@ apply_rule_set_repeat_helper(R, E, _Ep, S) :-
     apply_rule_set(R, E, Er),
     !,
     apply_rule_set_repeat_helper(R, Er, E, S). 
-    
+
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 /* Substitute (Bratko, pg 157).  */
@@ -200,6 +285,22 @@ test(cas_rules) :- apply_rule(zeroMul, 0*a+b, 0+b).
 test(cas_rules) :- apply_rule(oneMul, 1*(1+a), 1+a).
 test(cas_rules) :- apply_rule(oneMul, 1*a+b, a+b).
 
+test(cas_rules) :- apply_rule(numArith, 1+1, 2).
+test(cas_rules) :- apply_rule(numArith, 2*4, 8).
+test(cas_rules) :- apply_rule(numArith, 9/3, 3).
+test(cas_rules) :- apply_rule(numArith, 3-9, -6).
+test(cas_rules) :- apply_rule(numArith, 2^4, 16).
+test(cas_rules) :- apply_rule_set_repeat([numArith], 2^4, 16).
+test(cas_rules) :- apply_rule_set_repeat([numArith], 2^4+1, 17).
+
+test(cas_rules) :- apply_rule(gatherPow, x*x, x^2).
+test(cas_rules) :- apply_rule(gatherPow, x^3*x, x^(3+1)).
+test(cas_rules) :- apply_rule(gatherPow, x*x^3, x^(1+3)).
+test(cas_rules) :- apply_rule(gatherPow, a^n*a^m, a^(n+m)).
+test(cas_rules) :- apply_rule(gatherPow, (x+1)^n*(x+1)^m, (x+1)^(n+m)).
+
+test(cas_rules) :- apply_rule_set_repeat([gatherPow,numArith], a*a*a, a^3).
+
 test(cas_rules) :- apply_rule_set([zeroAdd,zeroMul], 0*a+b, 0+b).
 test(cas_rules) :- apply_rule_set([zeroMul,zeroAdd], 0*a+b, b).
 test(cas_rules) :- apply_rule_set([zeroAdd,zeroMul], 0*b+0+a, 0+a).
@@ -213,16 +314,34 @@ test(cas_rules) :- apply_rule_set_repeat([oneMul], 1*b+a, b+a).
 test(cas_rules) :- apply_rule_set_repeat([oneMul], 1*1*b+0+a, b+0+a).
 test(cas_rules) :- apply_rule_set_repeat([zeroAdd,oneMul], 1*1*b+0+a, b+a).
 test(cas_rules, fail) :- apply_rule_set_repeat([zeroAdd,zeroMul], 1+1, 2).
-test(cas_rules) :- idRules(X), apply_rule_set_repeat(X, a^0+(0+b)+(1*c),1+b+c).
+test(cas_rules) :- idRules(X), apply_rule_set_repeat(X, a^0+(0+b)+(1*c), 1+b+c).
+test(cas_rules) :- idRules(X), apply_rule_set_repeat(X, a^0-b^0, 0).
+
+test(cas_rules) :- apply_rule_set_repeat([distMullAdd], c*(a+b), c*a+c*b).
+test(cas_rules) :- apply_rule_set_repeat([distMullAdd], (a+b)*c, a*c+b*c).
+test(cas_rules) :- apply_rule_set_repeat([distMullAdd], (a+b+c)*d, a*d+b*d+c*d).
+test(cas_rules) :- apply_rule_set_repeat([distMullAdd], d*(a+b+c), d*a+d*b+d*c).
+test(cas_rules) :- apply_rule_set_repeat([distMullAdd], (a+b)*(c+d),  a*c+a*d+(b*c+b*d)).
+test(cas_rules) :- apply_rule_set_repeat([distMullAdd], (x+1)*(x+1),  x*x+x*1+(1*x+1*1)).
 
 test(cas_rules) :- to_nary(a,a).
 test(cas_rules) :- to_nary(a+b, nary(+, [a,b])).
+test(cas_rules) :- to_nary(a+a, nary(+, [a,a])).
+test(cas_rules) :- to_nary(a*a, nary(*, [a,a])).
 test(cas_rules) :- to_nary(a+b+c, nary(+, [a,b,c])).
 test(cas_rules) :- to_nary((a+b)+c, nary(+, [a,b,c])).
 test(cas_rules) :- to_nary(a+(b+c), nary(+, [a,b,c])).
 test(cas_rules) :- to_nary(a+4*b^2+c, nary(+, [a,4*b^2,c])).
-
 test(cas_rules) :- to_nary((a*b)*c, nary(*, [a,b,c])).
+
+test(cas_rules) :- from_nary(nary(*, [a,b,c]), (a*b)*c).
+test(cas_rules) :- from_nary(nary(+, [a,4*b^2,c]), a+4*b^2+c).
+
+test(cas_rules) :- narySort(nary(*, [b,a]), nary(*, [a,b])).
+test(cas_rules) :- narySort(nary(*, [x,3,x]), nary(*, [3,x,x])).
+test(cas_rules) :- narySort(nary(*, [x,x]), nary(*, [x,x])).
+test(cas_rules, fail) :- narySort(nary(*, [x,x]), nary(*, [x])).
+
 
 test(cas_rules) :- apply_rule_set_repeat([to_nary], sin(a+b+c), sin(nary(+, [a, b, c]))).
 test(cas_rules) :- apply_rule_set_repeat([to_nary], 2*(a+b+b), nary(*, [2, nary(+, [a, b, b])])).
