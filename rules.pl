@@ -8,6 +8,7 @@ module(cas_rules, [zeroAdd/2, map/3]).
 zeroAddp(0+_, true) :- ! .
 zeroAddp(_, false).
 zeroAdd(0+A, A) :- !.
+zeroAdd(0+A, 0+A) :- !, fail.
 zeroAdd(A, A).
 
 zeroMulp(0*_, true) :- ! .
@@ -32,7 +33,7 @@ apply(Rule, Expression, Result) :-
 % Map a rule onto a list of expressions.
 map_rule_list(_, [], []) :- !.
 map_rule_list(R, [X | L], [X1 | L1]) :- 
-    apply(R, X, X1),
+    apply_rule(R, X, X1),
     map_rule_list(R, L, L1).
 
 % Recurse rule accross expression tree.
@@ -41,7 +42,7 @@ apply_rule(_, E, E) :- atomic(E), !.
 apply_rule(R, E, S) :-
     apply(R, E, Er),
     Er =.. [Op | Args],
-    apply_rule_helper(R, Args, Argsr),
+    map_rule_list(R, Args, Argsr),
     S =.. [Op | Argsr].
 
 
