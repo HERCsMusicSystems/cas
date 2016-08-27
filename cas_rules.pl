@@ -1,11 +1,9 @@
-% An individual rule based approach to expression manipulation.
+% This file contins core rules for manipulation, and basic functions to manage manipulations.
 %
 % Chris Sangwin, August 2016.
 %
 % To find the data structure underlying an expression in prolog.
 % writef('%d', [<expr>]).
-
-module(cas_rules, [zeroAdd/2, map/3]).
 
 % Each rule has a predicate ending in "p" and the function itself which performs the rule.
 % NOTE: all these rules go one way only!  Therefore no circular loops.
@@ -175,16 +173,16 @@ map(R, [X | L], [X1 | L1]) :-
     X1 =.. [R, X],
     map(R, L, L1).
 
-% Apply a single rule.
-apply(Rule, Expression, Result) :- 
-   E1 =.. [Rule, Expression, Result],
-   E1.
-
 % Map a rule onto a list of expressions.
 map_rule_list(_, [], []) :- !.
 map_rule_list(R, [X | L], [X1 | L1]) :- 
     apply_rule(R, X, X1),
     map_rule_list(R, L, L1).
+
+% Apply a single rule.
+apply(Rule, Expression, Result) :- 
+   E1 =.. [Rule, Expression, Result],
+   E1.
 
 % Recurse rule accross expression tree.
 % apply_rule(Rule, Expression, SimplifiedResult)
@@ -220,31 +218,6 @@ apply_rule_set_repeat_helper(R, E, _Ep, S) :-
     apply_rule_set(R, E, Er),
     !,
     apply_rule_set_repeat_helper(R, Er, E, S). 
-
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-/* Substitute (Bratko, pg 157).  */
-
-% substitute(Subterm, Term, Subterm1, Term1)
-% if all occurances of Subterm in Term are subsituted with Subterm1 then we get Term1.
-
-% Case 1: Substitute the whole term.
-substitute(Term, Term, Term1, Term1) :- !.
-
-% Case 2: Nothing to substitute if Term is atomic.
-substitute(_, Term, _, Term) :- atomic(Term), !.
-
-% Case 3: Do substitution on arguments.
-substitute(Sub, Term, Sub1, Term1) :-
-  Term =.. [F | Args],
-  sublist(Sub, Args, Sub1, Args1),
-  Term1 =.. [F | Args1].
-
-sublist(_, [], _, []).
-sublist(Sub, [Term | Terms], Sub1, [Term1 |Terms1]) :-
-  substitute(Sub, Term, Sub1, Term1),
-  sublist(Sub, Terms, Sub1, Terms1).
-
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
