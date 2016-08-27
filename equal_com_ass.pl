@@ -48,6 +48,7 @@ test(equal_com_ass) :- equal_com_ass((x+y)+z, z+x+y).
 test(equal_com_ass, fail) :- equal_com_ass(x*x, x^2).
 test(equal_com_ass) :- equal_com_ass((x+5)*x, x*(5+x)).
 test(equal_com_ass, fail) :- equal_com_ass(x*(x+5), 5*x+x^2).
+test(equal_com_ass) :- equal_com_ass(3*(1+x)^2, (x+1)^2*3).
 % The following are not considered equal because they need to use even powers of negative numbers being equal.
 test(equal_com_ass, fail) :- equal_com_ass((1-x)^2, (x-1)^2).
 test(equal_com_ass, fail) :- equal_com_ass((a-x)^6000, (x-a)^6000).
@@ -57,6 +58,7 @@ test(equal_com_ass) :- equal_com_ass(-1+2, 2-1).
 test(equal_com_ass) :- equal_com_ass(-1*2+3*4, 3*4-1*2).
 test(equal_com_ass, fail) :- equal_com_ass((-1*2)+3*4, 10).
 test(equal_com_ass) :- equal_com_ass(-1*2+3*4, 3*4-1*2).
+test(equal_com_ass) :- equal_com_ass(-x+y, y-x).
 test(equal_com_ass) :- equal_com_ass(x*(-y), -x*y).
 test(equal_com_ass) :- equal_com_ass(x*(-y), -(x*y)).
 % The following two tests should fail because these require other rules, e.g. "-*- -> +".

@@ -2,10 +2,8 @@
 %
 % Chris Sangwin, August 2016.
 %
-% To find the data structure underlying an expression in prolog.
-% writef('%d', [<expr>]).
 
-% Each rule has a predicate ending in "p" and the function itself which performs the rule.
+% Coding convention: rules in camelCase, e.g. unaryMinus, toplevel CAS functions lowercase with underscores.
 % NOTE: all these rules go one way only!  Therefore no circular loops.
 zeroAdd(0+A, A) :- !.
 zeroAdd(A+0, A) :- !.
@@ -13,6 +11,7 @@ zeroAdd(0+A, 0+A) :- !, fail.
 zeroAdd(A, A).
 
 zeroMul(0*_A, 0) :- !.
+zeroMul(0*A, 0*A) :- !, fail.
 zeroMul(A, A).
 
 oneMul(1*A, A) :- !.
@@ -80,12 +79,11 @@ numArith(A, A).
   a*(b+c) -> a*b + a*c.
 */
 
-/* TODO: deal with unary minus here... */
 distMullAdd(*(+(A, B), C), A*C + B*C) :- !.
 distMullAdd(*(A, +(B, C)), A*B + A*C) :- !.
 distMullAdd(A, A).
 
-/* TODO: this is prototype behaviour, but it exhibits the potential. */
+/* TODO: this is prototype top level behaviour, but it exhibits the potential. */
 expand(E, S) :- 
     apply_rule_set_repeat([from_nary, distMullAdd, numArith, gatherPow, gatherMul, to_nary, narySort], E, S1),
     apply_rule_set_repeat([from_nary], S1, S).
@@ -102,6 +100,7 @@ expand(E, S) :-
 % Gather terms in a product.
 
 /* TODO: this is probably better done by manipulating nary terms. */
+/* TODO: unit testing of the following.                          */
 gatherMul(+(A, A), 2*A) :- !.
 gatherMul(+(N*A, A), (N+1)*A) :- !.
 gatherMul(+(A*N, A), (N+1)*A) :- !.
@@ -111,18 +110,18 @@ gatherMul(+(N*A, M*A), (N+M)*A) :- !.
 gatherMul(+(A*N, M*A), (N+M)*A) :- !.
 gatherMul(+(N*A, A*M), (N+M)*A) :- !.
 gatherMul(+(A*N, A*M), (N+M)*A) :- !.
-gatherMul(A,A).
+gatherMul(A, A).
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Gather powers.  a^n*a^m -> a^(n+m)
 
-/* TODO: combine terms in nary products as well. */
+/* TODO:this is probably better done by manipulating nary terms. */
 gatherPow(*(A, A), A^2) :- !.
 gatherPow(*(A^N, A), A^(N+1)) :- !.
 gatherPow(*(A, A^N), A^(1+N)) :- !.
 gatherPow(*(A^N, A^M), A^(N+M)) :- !.
-gatherPow(A,A).
+gatherPow(A, A).
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -130,12 +129,53 @@ gatherPow(A,A).
   nary(<op>, <L>)
   where <op> is either '+' or '*'.
         <L> is a list of arguments.
+  E.g. a+b+c is represented as nary(+, [a,b,c]).
+  This is a verbose form, intended only for internal computation.
+
+  To deal with "minus" we introduce a special and spurious operator "unaryminus" as a product.
+  E.g. -x -> unaryminus*x.
+  This is literally (-1)*x.  But, it is different from -1, so we can later distingish -1*x from -x.
+  We also change a-b to a+unaryminus*b, so we only need to deal with addition and not subtraction.
+
+  We want 
+  -a*b -> nary(*, [uaryminus, a, b]).
+
+  Then, with addition:
+  a-b -> nary(+, [a, nary(*, [uaryminus, b])]).
+  -b+a -> nary(+, [nary(*, [uaryminus, b]), a]).
+  a-b+c -> nary(+, [a, nary(*, [uaryminus, b]), c]).
+
 */
 
-to_nary(E,E) :- atomic(E), !.
-to_nary(+(A, B), nary(+, N)) :- to_nary_helper(+, +(A, B), N), !.
-to_nary(*(A, B), nary(*, N)) :- to_nary_helper(*, *(A, B), N), !.
-to_nary(E,E).
+% This rule removes all minus signs in a way which commutes with multiplication.
+% We really don't allow negative numbers here.
+unaryMinus(E, unaryminus*E1) :- 
+    number(E), 
+    E<0,
+    E1 is (-1*E), 
+    !.
+unaryMinus(E, E) :- 
+    number(E), 
+    E<0,
+    !, 
+    fail.
+unaryMinus(-(A), unaryminus*A) :- !.
+unaryMinus(-(A), -(A)) :- !, fail.
+unaryMinus(-(A, B), +(A, unaryminus*B)) :- !.
+unaryMinus(-(A, B), -(A, B)) :- !, fail.
+unaryMinus(A, A).
+
+% This is the toplevel function.
+to_nary(E, N) :- 
+    apply_rule_set_repeat([unaryMinus], E, N1),
+    to_nary_flatten(N1, N).
+
+% Flatten nested binary addition and multiplication.
+% e.g (a+b)+c -> nary(+, [a, b, c]).
+to_nary_flatten(E, E) :- atomic(E), !.
+to_nary_flatten(+(A, B), nary(+, N)) :- to_nary_helper(+, +(A, B), N), !.
+to_nary_flatten(*(A, B), nary(*, N)) :- to_nary_helper(*, *(A, B), N), !.
+to_nary_flatten(E, E).
 
 to_nary_helper(Op, E, N) :-
         E =.. [Op, A, B],
@@ -144,8 +184,9 @@ to_nary_helper(Op, E, N) :-
     append(N1, N2, N), !.
 to_nary_helper(_, E, [E]).
 
-/* Turns an nary term back into sums and products. */
+% Turns an nary term back into sums and products.
 % This should hold: from_nary(A, B) :- to_nary(B, A).
+% TODO: add in unaryminus.
 from_nary(E, E) :- atomic(E), !.
 from_nary(nary(Op, L), S) :-
     reverse(L, R),
@@ -228,6 +269,18 @@ test(cas_rules) :- zeroAdd(0+sin(x), sin(x)).
 test(cas_rules) :- zeroAdd(0, 0).
 test(cas_rules) :- zeroAdd(a+0, a+0).
 
+test(cas_rules) :- unaryMinus(2, 2).
+test(cas_rules) :- unaryMinus(x, x).
+test(cas_rules) :- unaryMinus(0, 0).
+test(cas_rules) :- unaryMinus(0.0, 0.0).
+test(cas_rules) :- unaryMinus(-2, unaryminus*2).
+test(cas_rules) :- unaryMinus(unaryminus*2, unaryminus*2).
+test(cas_rules, fail) :- unaryMinus(-2, -2).
+test(cas_rules) :- unaryMinus(-x, unaryminus*x).
+test(cas_rules, fail) :- unaryMinus(-x, -x).
+test(cas_rules) :- unaryMinus(a-b, +(a, unaryminus*b)).
+test(cas_rules, fail) :- unaryMinus(y-x, y-x).
+
 test(cas_rules) :- map(f, [], []).
 test(cas_rules) :- map(f, [a,b,c], [f(a), f(b), f(c)]).
 
@@ -239,15 +292,26 @@ test(cas_rules) :- map_rule_list(zeroAdd, [0+a,b,0+sin(c)], [a,b,sin(c)]).
 
 test(cas_rules) :- apply(zeroAdd, a, a).
 test(cas_rules) :- apply(zeroAdd, 0+a, a).
+test(cas_rules, fail) :- apply(zeroAdd, 0+a, 0+a).
 test(cas_rules) :- apply(zeroAdd, a+0, a+0).
+
+test(cas_rules) :- apply(unaryMinus, -2, unaryminus*2).
+test(cas_rules, fail) :- apply(unaryMinus, -2, -2).
+test(cas_rules) :- apply(unaryMinus, -0.5, unaryminus*0.5).
+test(cas_rules, fail) :- apply(unaryMinus, -0.5, -0.5).
+test(cas_rules) :- apply(unaryMinus, -a, unaryminus*a).
+test(cas_rules, fail) :- apply(unaryMinus, -a, -a).
 
 test(cas_rules) :- apply_rule(zeroAdd, a, a).
 test(cas_rules) :- apply_rule(zeroAdd, 1, 1).
 test(cas_rules) :- apply_rule(zeroAdd, 1+1, 1+1).
 test(cas_rules) :- apply_rule(zeroAdd, 0.5, 0.5).
 
+test(cas_rules) :- apply_rule(zeroAdd, 0+a, a).
+test(cas_rules, fail) :- apply_rule(zeroAdd, 0+a, 0+a).
 test(cas_rules) :- apply_rule(zeroAdd, 3*a, 3*a).
 test(cas_rules) :- apply_rule(zeroAdd, 3*(0+a), 3*a).
+test(cas_rules, fail) :- apply_rule(zeroAdd, 3*(0+a), 3*(0+a)).
 test(cas_rules) :- apply_rule(zeroAdd, (0+b)*(0+a), b*a).
 test(cas_rules) :- apply_rule(zeroAdd, (0+b)*(0+a)+7, b*a+7).
 test(cas_rules) :- apply_rule(zeroAdd, a+0+b, a+b).
@@ -258,7 +322,26 @@ test(cas_rules) :- apply_rule(zeroMul, 0*a+b, 0+b).
 test(cas_rules) :- apply_rule(oneMul, 1*(1+a), 1+a).
 test(cas_rules) :- apply_rule(oneMul, 1*a+b, a+b).
 
+test(cas_rules) :- apply_rule(unaryMinus, x, x).
+% Negative numbers don't really exist.
+test(cas_rules) :- apply_rule(unaryMinus, -2, unaryminus*2).
+test(cas_rules, fail) :- apply_rule(unaryMinus, -2, -2).
+test(cas_rules) :- apply_rule(unaryMinus, -0.5, unaryminus*0.5).
+test(cas_rules, fail) :- apply_rule(unaryMinus, -0.5, -0.5).
+test(cas_rules) :- apply_rule(unaryMinus, -x, unaryminus*x).
+test(cas_rules, fail) :- apply_rule(unaryMinus, -x, -x).
+test(cas_rules) :- apply_rule(unaryMinus, 1-2, 1+unaryminus*2).
+test(cas_rules, fail) :- apply_rule(unaryMinus, 1-2, 1-2).
+% Note associativity in the next two examples.
+test(cas_rules) :- apply_rule(unaryMinus, -a*b, unaryminus*a*b).
+test(cas_rules) :- apply_rule(unaryMinus, -(a*b), unaryminus*(a*b)).
+test(cas_rules, fail) :- apply_rule(unaryMinus, -a*b, -a*b).
+test(cas_rules, fail) :- apply_rule(unaryMinus, -(a*b), -(a*b)).
+test(cas_rules) :- apply_rule(unaryMinus, -(a+b), unaryminus*(a+b)).
+test(cas_rules, fail) :- apply_rule(unaryMinus, -(a+b), -(a+b)).
+
 test(cas_rules) :- apply_rule(numArith, 1+1, 2).
+test(cas_rules) :- apply_rule(numArith, 1+0.5, 1.5).
 test(cas_rules) :- apply_rule(numArith, 2*4, 8).
 test(cas_rules) :- apply_rule(numArith, 9/3, 3).
 test(cas_rules) :- apply_rule(numArith, 3-9, -6).
@@ -287,15 +370,15 @@ test(cas_rules) :- apply_rule_set_repeat([oneMul], 1*b+a, b+a).
 test(cas_rules) :- apply_rule_set_repeat([oneMul], 1*1*b+0+a, b+0+a).
 test(cas_rules) :- apply_rule_set_repeat([zeroAdd,oneMul], 1*1*b+0+a, b+a).
 test(cas_rules, fail) :- apply_rule_set_repeat([zeroAdd,zeroMul], 1+1, 2).
-test(cas_rules) :- idRules(X), apply_rule_set_repeat(X, a^0+(0+b)+(1*c), 1+b+c).
-test(cas_rules) :- idRules(X), apply_rule_set_repeat(X, a^0-b^0, 0).
-
 test(cas_rules) :- apply_rule_set_repeat([distMullAdd], c*(a+b), c*a+c*b).
 test(cas_rules) :- apply_rule_set_repeat([distMullAdd], (a+b)*c, a*c+b*c).
 test(cas_rules) :- apply_rule_set_repeat([distMullAdd], (a+b+c)*d, a*d+b*d+c*d).
 test(cas_rules) :- apply_rule_set_repeat([distMullAdd], d*(a+b+c), d*a+d*b+d*c).
 test(cas_rules) :- apply_rule_set_repeat([distMullAdd], (a+b)*(c+d),  a*c+a*d+(b*c+b*d)).
 test(cas_rules) :- apply_rule_set_repeat([distMullAdd], (x+1)*(x+1),  x*x+x*1+(1*x+1*1)).
+
+test(cas_rules) :- idRules(X), apply_rule_set_repeat(X, a^0+(0+b)+(1*c), 1+b+c).
+test(cas_rules) :- idRules(X), apply_rule_set_repeat(X, a^0-b^0, 0).
 
 test(cas_rules) :- to_nary(a,a).
 test(cas_rules) :- to_nary(a+b, nary(+, [a,b])).
@@ -306,6 +389,10 @@ test(cas_rules) :- to_nary((a+b)+c, nary(+, [a,b,c])).
 test(cas_rules) :- to_nary(a+(b+c), nary(+, [a,b,c])).
 test(cas_rules) :- to_nary(a+4*b^2+c, nary(+, [a,4*b^2,c])).
 test(cas_rules) :- to_nary((a*b)*c, nary(*, [a,b,c])).
+% These examples illustrate the strange looking "nnaryminus" tag.
+test(cas_rules) :- to_nary(-(a*b), nary(*, [unaryminus, a, b])).
+test(cas_rules) :- to_nary(-(a)*b, nary(*, [unaryminus, a, b])).
+
 
 test(cas_rules) :- from_nary(nary(*, [a,b,c]), (a*b)*c).
 test(cas_rules) :- from_nary(nary(+, [a,4*b^2,c]), a+4*b^2+c).
@@ -320,5 +407,8 @@ test(cas_rules) :- apply_rule_set_repeat([to_nary], sin(a+b+c), sin(nary(+, [a, 
 test(cas_rules) :- apply_rule_set_repeat([to_nary], 2*(a+b+b), nary(*, [2, nary(+, [a, b, b])])).
 
 test(cas_rules) :- apply_rule_set_repeat([to_nary, narySort], 2*(z+a+y+0), nary(*, [2, nary(+, [0, a, y, z])])).
+% Note the result in the following two lines is identical, as it should be.
+test(cas_rules) :- apply_rule_set_repeat([to_nary, narySort], 3*(x+1)^2,  nary(*, [3, nary(+, [1, x])^2])).
+test(cas_rules) :- apply_rule_set_repeat([to_nary, narySort], (1+x)^2*3,  nary(*, [3, nary(+, [1, x])^2])).
 
 :- end_tests(cas_rules).

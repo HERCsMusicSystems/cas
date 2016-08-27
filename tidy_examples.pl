@@ -41,26 +41,3 @@ test(cas, fail) :- ass3(x^2+2*x+3*x+7, 3, 2).
 
 :- end_tests(cas).
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%% Different types of "tidying".
-%% Rules in order of increasing complexity.
-
-% (0) Rules you almost always want to apply.  = compating.
-% See, for example, https://github.com/maths/moodle-qtype_stack/blob/master/stack/maxima/elementary.mac
-% 1*x -> x.
-% x+0 -> x.
-% etc.
-
-% (1) Tidying.
-% Order terms in sums and products.     
-% e.g. x+z+y -> x+y+z
-%      x+x^2+1 -> x^2+x+1.
-
-% (2) Minial changing of expressions.
-% Integer arithmatic, e.g 2+3->5.
-% Gathering like terms   2*x^3+3*x^3 -> 5*x^3.
-
-% (3) Algebraic Equivalence.
-
-    
-    
