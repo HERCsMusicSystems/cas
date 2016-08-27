@@ -14,6 +14,7 @@
 :- 
 [
 'cas_rules.pl',
+'equal_exact.pl',
 'equal_com_ass.pl'
 ].
 
