@@ -1,7 +1,7 @@
 /* 
 
 An answer test is used to compare two expressions to establish whether they satisfy some mathematical criteria. 
-This file is a prototype answer test which establishes equality up to associativity and commuatativity.
+This file is a prototype answer test which establishes equality up to associativity and commutativity.
 
 For example a+b=b+a but x+x\neq 2x.
 
@@ -62,7 +62,7 @@ test(equal_com_ass) :- equal_com_ass(-x+y, y-x).
 test(equal_com_ass) :- equal_com_ass(x*(-y), -x*y).
 test(equal_com_ass) :- equal_com_ass(x*(-y), -(x*y)).
 % The following two tests should fail because these require other rules, e.g. "-*- -> +".
-% So, they are not equal up to associativity and commuatativity.
+% So, they are not equal up to associativity and commutativity.
 test(equal_com_ass, fail) :- equal_com_ass((-x)*(-x), x*x).
 test(equal_com_ass, fail) :- equal_com_ass((-x)*(-x), x^2).
 

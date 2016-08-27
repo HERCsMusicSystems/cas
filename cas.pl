@@ -22,7 +22,7 @@
 /* Substitute (Bratko, pg 157).  */
 
 % substitute(Subterm, Term, Subterm1, Term1)
-% if all occurances of Subterm in Term are subsituted with Subterm1 then we get Term1.
+% if all occurrences of Subterm in Term are substituted with Subterm1 then we get Term1.
 
 % Case 1: Substitute the whole term.
 substitute(Term, Term, Term1, Term1) :- !.

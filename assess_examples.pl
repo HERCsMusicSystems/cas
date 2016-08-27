@@ -5,7 +5,7 @@
 
 
 % Student's answer (S) really is the same as the tidied up teacher's answer (T).
-% "Tidy" here means both idenity transformations such as 0*x->0 and numerical arithmatic.
+% "Tidy" here means both identity transformations such as 0*x->0 and numerical arithmetic.
 % There is no associativity or commutativity so if the student has the wrong order in terms, their answer fails this test.
 ass1(S, T) :- 
     idRules(Idr),
@@ -21,13 +21,13 @@ ass2(S, T) :-
     apply_rule_set_repeat([numArith | Idr], S, S1),
     equal_exact(S1, T1).
 
-% Here we allow associativity or commutativity, but don't "tidy" the student's arithmatic at all.
+% Here we allow associativity or commutativity, but don't "tidy" the student's arithmetic at all.
 ass3(S, T) :- 
     idRules(Idr),
     apply_rule_set_repeat([numArith | Idr], T, T1),
     equal_com_ass(S, T1).
 
-% Here we allow associativity or commutativity, and we do "tidy" the student's arithmatic.
+% Here we allow associativity or commutativity, and we do "tidy" the student's arithmetic.
 % This is close to algebraic equivalence, but we haven't gathered like terms yet.
 ass4(S, T) :- 
     idRules(Idr),

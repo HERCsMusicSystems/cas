@@ -1,4 +1,4 @@
-% This file contins core rules for manipulation, and basic functions to manage manipulations.
+% This file contains core rules for manipulation, and basic functions to manage manipulations.
 %
 % Chris Sangwin, August 2016.
 %
@@ -134,7 +134,7 @@ gatherPow(A, A).
 
   To deal with "minus" we introduce a special and spurious operator "unaryminus" as a product.
   E.g. -x -> unaryminus*x.
-  This is literally (-1)*x.  But, it is different from -1, so we can later distingish -1*x from -x.
+  This is literally (-1)*x.  But, it is different from -1, so we can later distinguish -1*x from -x.
   We also change a-b to a+unaryminus*b, so we only need to deal with addition and not subtraction.
 
   We want 
@@ -199,7 +199,7 @@ from_nary_helper(Op, [N | L], S) :-
     from_nary_helper(Op, L, E1).
 
 % Sort the arguments of nary operators into a definite order. 
-% This rule implements commuataivity of + and *, allowing us to sort 
+% This rule implements commutativity of + and *, allowing us to sort 
 % operands into a list.  We can then compare the sorted lists.
 narySort(nary(Op, N), nary(Op, Ns)) :- 
     msort(N, Ns), % Warning: sort removes duplicates.
