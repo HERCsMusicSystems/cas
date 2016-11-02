@@ -227,7 +227,7 @@ apply(Rule, Expression, Result) :-
 
 % Recurse rule accross expression tree.
 % apply_rule(Rule, Expression, SimplifiedResult)
-apply_rule(_, E, E) :- atomic(E), !.
+%apply_rule(_, E, E) :- atomic(E), !.
 apply_rule(R, E, S) :-
     apply(R, E, Er),
     Er =.. [Op | Args],
@@ -325,9 +325,9 @@ test(cas_rules) :- apply_rule(oneMul, 1*a+b, a+b).
 test(cas_rules) :- apply_rule(unaryMinus, x, x).
 % Negative numbers don't really exist.
 test(cas_rules) :- apply_rule(unaryMinus, -2, unaryminus*2).
-test(cas_rules, fail) :- apply_rule(unaryMinus, -2, -2).
+test(cas_rules, fail) :- apply_rule(unaryMinus, - 2, -2).
 test(cas_rules) :- apply_rule(unaryMinus, -0.5, unaryminus*0.5).
-test(cas_rules, fail) :- apply_rule(unaryMinus, -0.5, -0.5).
+test(cas_rules, fail) :- apply_rule(unaryMinus, - 0.5, -0.5).
 test(cas_rules) :- apply_rule(unaryMinus, -x, unaryminus*x).
 test(cas_rules, fail) :- apply_rule(unaryMinus, -x, -x).
 test(cas_rules) :- apply_rule(unaryMinus, 1-2, 1+unaryminus*2).
